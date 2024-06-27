@@ -1,42 +1,34 @@
 body {
     font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #f0f0f0;
 }
 
 #chat-container {
-    width: 90%;
-    max-width: 600px;
-    background: white;
-    border-radius: 10px;
+    background-color: white;
+    width: 300px;
+    padding: 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
 }
 
 #messages {
-    height: 400px;
+    height: 300px;
     overflow-y: scroll;
-    padding: 20px;
-    box-sizing: border-box;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
 }
 
 #message-input {
-    width: calc(100% - 80px);
+    width: calc(100% - 60px);
     padding: 10px;
-    border: none;
-    border-top: 1px solid #ddd;
-    box-sizing: border-box;
 }
 
 #send-button {
-    width: 60px;
-    border: none;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
+    width: 50px;
+    padding: 10px;
 }
-
