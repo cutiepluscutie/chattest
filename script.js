@@ -1,3 +1,4 @@
+// Your Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBtdvFbGG_yusur8XlknmUwkxIMFThISog",
     authDomain: "livechat-9f999.firebaseapp.com",
@@ -7,14 +8,17 @@ const firebaseConfig = {
     appId: "1:952843776688:web:935b8197c5c036b5278175"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // Generate a random user ID
 const userId = Math.random().toString(36).substring(2, 15);
 
-// Listen for new messages
+// Reference to the messages in the database
 const messagesRef = database.ref('messages');
+
+// Listen for new messages and load existing messages
 messagesRef.on('child_added', (snapshot) => {
     const message = snapshot.val();
     displayMessage(message);
@@ -35,10 +39,21 @@ document.getElementById('message-form').addEventListener('submit', (e) => {
     const input = document.getElementById('message-input');
     const text = input.value.trim();
     if (text) {
-        messagesRef.push({
+        const newMessageRef = messagesRef.push();
+        newMessageRef.set({
             userId: userId,
-            text: text
+            text: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         });
         input.value = '';
     }
+});
+
+// Load chat history when the page loads
+window.addEventListener('load', () => {
+    messagesRef.orderByChild('timestamp').limitToLast(100).once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+            displayMessage(childSnapshot.val());
+        });
+    });
 });
