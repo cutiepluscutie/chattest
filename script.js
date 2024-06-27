@@ -1,7 +1,3 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onChildAdded, push } from "firebase/database";
-
 const firebaseConfig = {
   apiKey: "AIzaSyDQPrgffVDwvUYxFxuG7_jX4v6qXUruXhM",
   authDomain: "chattest-4adb4.firebaseapp.com",
@@ -13,41 +9,48 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+firebase.initializeApp(firebaseConfig);
+var database = firebase.database();
 
-// Get user IP
-async function getUserIP() {
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    return data.ip;
-}
+// Elements
+var messagesDiv = document.getElementById('messages');
+var messageInput = document.getElementById('message-input');
+var sendButton = document.getElementById('send-button');
 
-// Get elements
-const messagesDiv = document.getElementById('messages');
-const messageInput = document.getElementById('message-input');
-const sendButton = document.getElementById('send-button');
+// Get user's IP and generate a unique ID
+var userId;
+fetch('https://api.ipify.org?format=json')
+    .then(response => response.json())
+    .then(data => {
+        userId = data.ip.replace(/\./g, '-'); // Replace dots to avoid issues in Firebase keys
+    });
 
-// Load messages
-onChildAdded(ref(db, 'messages'), (snapshot) => {
-    const message = snapshot.val();
-    const messageElement = document.createElement('div');
-    messageElement.textContent = `[${message.id}] ${message.text}`;
-    messagesDiv.appendChild(messageElement);
+// Load chat messages
+database.ref('messages').on('child_added', function(snapshot) {
+    var message = snapshot.val();
+    var messageDiv = document.createElement('div');
+    messageDiv.textContent = message.user + ': ' + message.text;
+    messagesDiv.appendChild(messageDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
 
-// Send message
-sendButton.addEventListener('click', async () => {
-    const message = messageInput.value;
-    if (message.trim() === "") return;
-
-    const userIP = await getUserIP();
-    const messageData = {
-        id: userIP,
-        text: message
-    };
-
-    await push(ref(db, 'messages'), messageData);
-    messageInput.value = "";
+// Send a new message
+sendButton.addEventListener('click', function() {
+    var messageText = messageInput.value;
+    if (messageText.trim() !== '') {
+        var newMessageRef = database.ref('messages').push();
+        newMessageRef.set({
+            user: userId,
+            text: messageText
+        });
+        messageInput.value = '';
+    }
 });
+
+// Send message on Enter key press
+messageInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        sendButton.click();
+    }
+});
+      
