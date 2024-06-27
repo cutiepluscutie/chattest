@@ -1,4 +1,4 @@
-// Your Firebase configuration
+// Initialize Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBtdvFbGG_yusur8XlknmUwkxIMFThISog",
     authDomain: "livechat-9f999.firebaseapp.com",
@@ -8,52 +8,70 @@ const firebaseConfig = {
     appId: "1:952843776688:web:935b8197c5c036b5278175"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const db = firebase.firestore();
 
-// Generate a random user ID
-const userId = Math.random().toString(36).substring(2, 15);
+let userId;
 
-// Reference to the messages in the database
-const messagesRef = database.ref('messages');
+// Function to get user's IP address and generate a unique ID
+async function getUserId() {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    const ip = data.ip;
+    userId = btoa(ip).substring(0, 8); // Encode IP and take first 8 characters
+    return userId;
+}
 
-// Listen for new messages and load existing messages
-messagesRef.on('child_added', (snapshot) => {
-    const message = snapshot.val();
-    displayMessage(message);
-});
+// Function to add a message to Firestore
+function addMessage(message) {
+    return db.collection('messages').add({
+        userId: userId,
+        text: message,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+}
 
-// Display a message in the chat
+// Function to display a message
 function displayMessage(message) {
     const messagesDiv = document.getElementById('messages');
     const messageElement = document.createElement('div');
-    messageElement.textContent = `${message.userId}: ${message.text}`;
+    messageElement.classList.add('message');
+    messageElement.innerHTML = `
+        <span class="user-id">${message.userId}:</span>
+        <span class="message-text">${message.text}</span>
+    `;
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// Send a new message
-document.getElementById('message-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-    if (text) {
-        const newMessageRef = messagesRef.push();
-        newMessageRef.set({
-            userId: userId,
-            text: text,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
+// Listen for new messages
+function listenForMessages() {
+    db.collection('messages')
+        .orderBy('timestamp')
+        .onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    displayMessage(change.doc.data());
+                }
+            });
         });
-        input.value = '';
+}
+
+// Handle form submission
+document.getElementById('message-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    if (message) {
+        await addMessage(message);
+        messageInput.value = '';
     }
 });
 
-// Load chat history when the page loads
-window.addEventListener('load', () => {
-    messagesRef.orderByChild('timestamp').limitToLast(100).once('value', (snapshot) => {
-        snapshot.forEach((childSnapshot) => {
-            displayMessage(childSnapshot.val());
-        });
-    });
-});
+// Initialize the chat
+async function initChat() {
+    await getUserId();
+    listenForMessages();
+}
+
+initChat();
