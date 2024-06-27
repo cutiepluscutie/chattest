@@ -17,7 +17,7 @@ var messagesDiv = document.getElementById('messages');
 var messageInput = document.getElementById('message-input');
 var sendButton = document.getElementById('send-button');
 
-// Get user's IP and generate a unique ID
+// Get user's IP and generate a unique ID (not recommended for production)
 var userId;
 fetch('https://api.ipify.org?format=json')
     .then(response => response.json())
@@ -36,14 +36,18 @@ database.ref('messages').on('child_added', function(snapshot) {
 
 // Send a new message
 sendButton.addEventListener('click', function() {
-    var messageText = messageInput.value;
-    if (messageText.trim() !== '') {
+    var messageText = messageInput.value.trim();
+    if (messageText !== '') {
         var newMessageRef = database.ref('messages').push();
         newMessageRef.set({
             user: userId,
             text: messageText
+        }).then(function() {
+            console.log('Message sent successfully');
+            messageInput.value = '';
+        }).catch(function(error) {
+            console.error('Error sending message:', error);
         });
-        messageInput.value = '';
     }
 });
 
@@ -53,4 +57,3 @@ messageInput.addEventListener('keypress', function(event) {
         sendButton.click();
     }
 });
-      
